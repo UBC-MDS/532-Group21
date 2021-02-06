@@ -32,7 +32,9 @@ labels = {
 }
 
 # Setup app and layout/frontend
-app = dash.Dash(__name__, title = "GapExpresser", external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(
+    __name__, title="GapExpresser", external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
 server = app.server
 
 
@@ -222,35 +224,40 @@ def plot_map(stat, region, sub_region, income_grp, pop_size, year):
     --------
     > plot_map("education_ratio", "Asia", "Western Asia", "Lower middle", [10_000, 1_000_000], [1968, 2015])
     """
-    #worldmap_data = data_filter(stat, region, sub_region, income_grp, year, pop_size)
+    # worldmap_data = data_filter(stat, region, sub_region, income_grp, year, pop_size)
     alt.data_transformers.disable_max_rows()
     data = filter_data(region, sub_region, income_grp)
     data = filter_popsize(data, pop_size)
     data = data[(data["year"] == f"{year[1]}")]
 
     # append clean country list
-    data = data.merge(country_list,  how="outer", on=["name", "id"])
+    data = data.merge(country_list, how="outer", on=["name", "id"])
 
     # replace NaN values with 0
-    data[[stat]] = data[[stat]].fillna(-1) 
+    data[[stat]] = data[[stat]].fillna(-1)
 
     # create world_map
-    world_map = alt.topo_feature(datasets.world_110m.url, "countries")  
+    world_map = alt.topo_feature(datasets.world_110m.url, "countries")
 
-    
     # if((region is None) & (sub_region is None) &(income_grp is None)):
-    if(region is None):
-        main_map = (alt.Chart(world_map, title=f"{labels[stat]} by Country for {year[1]}")
-                .mark_geoshape(stroke="black")
-                .transform_lookup(lookup="id", from_=alt.LookupData(data, key="id", fields=["name", stat]))
-                .encode(tooltip=["name:O", stat + ":Q"], color=alt.Color(stat + ":Q", title=f"{labels[stat]}"))
-                .configure_title(fontSize=24)
-                .configure_legend(labelFontSize=12)
-                .project(type="equalEarth")
-                .properties(width=1000, height=500)
-                )
-    
-    elif(region is not None): #and sub_region is None
+    if region is None:
+        main_map = (
+            alt.Chart(world_map, title=f"{labels[stat]} by Country for {year[1]}")
+            .mark_geoshape(stroke="black")
+            .transform_lookup(
+                lookup="id", from_=alt.LookupData(data, key="id", fields=["name", stat])
+            )
+            .encode(
+                tooltip=["name:O", stat + ":Q"],
+                color=alt.Color(stat + ":Q", title=f"{labels[stat]}"),
+            )
+            .configure_title(fontSize=24)
+            .configure_legend(labelFontSize=12)
+            .project(type="equalEarth")
+            .properties(width=1000, height=500)
+        )
+
+    elif region is not None:  # and sub_region is None
         s = None
         t = None
         if region == "Europe":
@@ -269,22 +276,26 @@ def plot_map(stat, region, sub_region, income_grp, pop_size, year):
             s = 500
             t = [-400, 0]
 
+        main_map = (
+            alt.Chart(world_map, title=f"{labels[stat]} by Country for {year[1]}")
+            .mark_geoshape(stroke="black")
+            .transform_lookup(
+                lookup="id", from_=alt.LookupData(data, key="id", fields=["name", stat])
+            )
+            .encode(
+                tooltip=["name:O", stat + ":Q"],
+                color=alt.Color(stat + ":Q", title=f"{labels[stat]}"),
+            )
+            .configure_title(fontSize=24)
+            .configure_legend(labelFontSize=12)
+            .project(type="naturalEarth1", scale=s, translate=t)
+            .properties(width=1000, height=700)
+        )
 
-        main_map = (alt.Chart(world_map, title=f"{labels[stat]} by Country for {year[1]}")
-                        .mark_geoshape(stroke="black")
-                        .transform_lookup(lookup="id", from_=alt.LookupData(data, key="id", fields=["name", stat]))
-                        .encode(tooltip=["name:O", stat + ":Q"], color=alt.Color(stat + ":Q", title=f"{labels[stat]}"))
-                        .configure_title(fontSize=24)
-                        .configure_legend(labelFontSize=12)
-                        .project(type='naturalEarth1', scale=s, translate=t) 
-                        .properties(width=1000, height=700))
-     
-
-    map_chart = (
-        main_map 
-    )
-    #test(stat, region, sub_region, income_grp, year, pop_size)
+    map_chart = main_map
+    # test(stat, region, sub_region, income_grp, year, pop_size)
     return map_chart.to_html()
+
 
 @app.callback(
     Output("bar", "srcDoc"),
@@ -420,8 +431,6 @@ def plot_line(stat, region, sub_region, income_grp, top_btm, pop_size, year):
     # filter on year
     data = data[(data["year"] >= f"{year[0]}") & (data["year"] <= f"{year[1]}")]
 
-    if(sub_region is not None):
-        data = stat
     zoom = alt.selection_interval(
         bind="scales",
         on="[mousedown[!event.shiftKey], mouseup] > mousemove",
@@ -452,7 +461,6 @@ def plot_line(stat, region, sub_region, income_grp, top_btm, pop_size, year):
     ).add_selection(zoom)
 
     return line.to_html()
-
 
 
 def get_topbtm_data(data, stat, top_btm, year):
